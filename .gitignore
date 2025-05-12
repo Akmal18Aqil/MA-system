@@ -1,0 +1,4 @@
+.env
+request.rest
+node_modules
+.vscode
