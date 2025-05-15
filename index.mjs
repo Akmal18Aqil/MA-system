@@ -6,8 +6,10 @@ dotenv.config();
 import UsersRoute from "./routes/Users.mjs";
 import ProductsRoute from "./routes/Products.mjs";
 import AuthRoute from "./routes/Auth.mjs";
+import MahasantriRoute from "./routes/Mahasantri.mjs";
 import db from "./config/Database.mjs";
 import SequelizeStore from "connect-session-sequelize";
+import { notFound, errorHandler } from "./middleware/ErrorMiddleware.mjs";
 
 const app = express();
 const sessionStore = SequelizeStore(session.Store);
@@ -15,7 +17,7 @@ const sessionStore = SequelizeStore(session.Store);
 const store = new sessionStore({
     db: db
 });
-
+// sessionStore.sync();
 // (async()=>{
 //     await db.sync();
 // })();
@@ -36,7 +38,20 @@ app.use(
 app.use(UsersRoute);
 app.use(ProductsRoute);
 app.use(AuthRoute);
+app.use(MahasantriRoute);
+// Error handling middleware
+app.use(notFound);
+app.use(errorHandler);
 
+// store.sync();
+// (async () => {
+//     try {
+//         await db.sync({ force: true }); // Menghapus tabel yang ada dan membuatnya kembali
+//         console.log("Tabel berhasil disinkronisasi");
+//     } catch (error) {
+//         console.error("Gagal menyinkronisasi tabel:", error);
+//     }
+// })();
 app.listen(process.env.APP_PORT, () => {
   console.log("Server is running");
 });

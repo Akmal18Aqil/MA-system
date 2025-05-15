@@ -1,27 +1,48 @@
 import User from "../models/UsersModel.mjs";
+import { AuthenticationError, AuthorizationError, NotFoundError } from '../utils/error.mjs';
 
-export const verifyUser = async (req, res, next) =>{
-    if(!req.session.userId){
-        return res.status(401).json({msg: "Mohon login ke akun Anda!"});
+export const verifyUser = async (req, res, next) => {
+  try {
+    if (!req.session.userId) {
+      throw new AuthenticationError();
     }
+    
     const user = await User.findOne({
-        where: {
-            uuid: req.session.userId
-        }
+      where: {
+        uuid: req.session.userId
+      }
     });
-    if(!user) return res.status(404).json({msg: "User tidak ditemukan"});
+    
+    if (!user) {
+      throw new NotFoundError('User');
+    }
+    
     req.userId = user.id;
-    req.role = user.role; 
+    req.role = user.role;
     next();
-}
+  } catch (error) {
+    next(error);
+  }
+};
 
-export const adminOnly = async (req, res, next) =>{
+export const adminOnly = async (req, res, next) => {
+  try {
     const user = await User.findOne({
-        where: {
-            uuid: req.session.userId
-        }
+      where: {
+        uuid: req.session.userId
+      }
     });
-    if(!user) return res.status(404).json({msg: "User tidak ditemukan"});
-    if(user.role !== "admin") return res.status(403).json({msg: "Akses terlarang"});
+    
+    if (!user) {
+      throw new NotFoundError('User');
+    }
+    
+    if (user.role !== "admin") {
+      throw new AuthorizationError('Akses terlarang: Hanya admin yang dapat mengakses resource ini');
+    }
+    
     next();
-}
+  } catch (error) {
+    next(error);
+  }
+};

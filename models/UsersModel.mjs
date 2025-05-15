@@ -30,6 +30,19 @@ const Users = db.define(
             isEmail: true
         }
     },
+    nim: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      unique: true,
+      validate: {
+        isNumeric: true,
+        len: [5, 20]
+      }
+    },
+    isFirstLogin: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: true,
+    },
     password:{
         type: DataTypes.STRING,
         allowNull: false,

@@ -1,45 +1,84 @@
 import Users from "../models/UsersModel.mjs";
 import argon2 from "argon2";
+import { AuthenticationError, NotFoundError, ValidationError } from '../utils/error.mjs';
 
-export const Login = async (req, res) =>{
-    console.log(req.body);
-    
-       if (!req.body) {
-           return res.status(400).json({ msg: "Body tidak terdefinisi" });
-       }
-    const user = await Users.findOne({
-        where: {
-            email: req.body.email
-        }
-    });
-    if(!user) return res.status(404).json({msg: "User tidak ditemukan"});
-    const match = await argon2.verify(user.password, req.body.password);
-    if(!match) return res.status(400).json({msg: "Wrong Password"});
-    req.session.userId = user.uuid;
-    const uuid = user.uuid;
-    const name = user.name;
-    const email = user.email;
-    const role = user.role;
-    res.status(200).json({uuid, name, email, role});
-}
-
-export const Me = async (req, res) =>{
-    if(!req.session.userId){
-        return res.status(401).json({msg: "Mohon login ke akun Anda!"});
+export const Login = async (req, res, next) => {
+  try {
+    if (!req.body) {
+      throw new ValidationError('Body tidak terdefinisi');
     }
+    
     const user = await Users.findOne({
-        attributes:['uuid','name','email','role'],
-        where: {
-            uuid: req.session.userId
-        }
+      where: {
+        email: req.body.email
+      }
     });
-    if(!user) return res.status(404).json({msg: "User tidak ditemukan"});
-    res.status(200).json(user);
-}
+    
+    if (!user) {
+      throw new NotFoundError('User');
+    }
+    
+    const match = await argon2.verify(user.password, req.body.password);
+    if (!match) {
+      throw new ValidationError('Password salah');
+    }
+    
+    req.session.userId = user.uuid;
+    
+    // Jika login pertama dan role mahasantri
+    if (user.isFirstLogin && user.role === "mahasantri") {
+      return res.status(200).json({
+        status: 'success',
+        msg: "Login pertama, silakan ganti password Anda.",
+        isFirstLogin: true
+      });
+    }
+    
+    const { uuid, name, email, role } = user;
+    res.status(200).json({
+      status: 'success',
+      data: { uuid, name, email, role }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
 
-export const logOut = (req, res) =>{
-    req.session.destroy((err)=>{
-        if(err) return res.status(400).json({msg: "Tidak dapat logout"});
-        res.status(200).json({msg: "Anda telah logout"});
+export const Me = async (req, res, next) => {
+  try {
+    if (!req.session.userId) {
+      throw new AuthenticationError();
+    }
+    
+    const user = await Users.findOne({
+      attributes: ['uuid', 'name', 'email', 'role'],
+      where: {
+        uuid: req.session.userId
+      }
     });
-}
+    
+    if (!user) {
+      throw new NotFoundError('User');
+    }
+    
+    res.status(200).json({
+      status: 'success',
+      data: user
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const logOut = (req, res, next) => {
+  req.session.destroy((err) => {
+    if (err) {
+      return next(new Error('Tidak dapat logout'));
+    }
+    
+    res.status(200).json({
+      status: 'success',
+      msg: "Anda telah logout"
+    });
+  });
+};
