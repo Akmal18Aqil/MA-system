@@ -1,0 +1,9 @@
+### Ganti Password
+PATCH http://localhost:3000/change-password
+Content-Type: application/json
+
+{
+  "oldPassword": "indra123",
+  "newPassword": "passwordBaru123",
+  "confirmPassword": "passwordBaru123"
+}

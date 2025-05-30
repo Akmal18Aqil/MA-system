@@ -1,0 +1,9 @@
+### Create Mahasantri
+POST http://localhost:3000/mahasantri
+Content-Type: application/json
+
+{
+  "name": "johan",
+  "email": "ahmadjohan@gmail.com",
+  "nim": "20250102222"
+}

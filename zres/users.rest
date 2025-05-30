@@ -1,0 +1,17 @@
+### Create Admin User
+POST http://localhost:3000/users
+Content-Type: application/json
+
+{
+  "name": "kasinoaha",
+  "email": "kasinoaha@example.com",
+  "password": "kasino23",
+  "confPassword": "kasino23",
+  "role": "admin"
+}
+
+### Get All Users
+GET http://localhost:3000/users
+
+### Get User by ID
+GET http://localhost:3000/users/2b3b7118-1de5-4dfc-9a7e-9c9d8d906a55

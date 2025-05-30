@@ -1,0 +1,41 @@
+### Login Admin
+POST http://localhost:3000/login
+Content-Type: application/json
+
+{
+  "email": "admin1@example.com",
+  "password": "adminpass"
+}
+
+### Login Dosen
+POST http://localhost:3000/login
+Content-Type: application/json
+
+{
+  "email": "indra1@example.com",
+  "password": "passwordBaru123"
+}
+
+### Login Mahasantri
+POST http://localhost:3000/login
+Content-Type: application/json
+
+{
+  "email": "ahmadfauzi@mail.com",
+  "password": "passwordBaru123"
+}
+
+### Login Johan
+POST http://localhost:3000/login
+Content-Type: application/json
+
+{
+  "email": "ahmadjohan@gmail.com",
+  "password": "20250102222"
+}
+
+### Get Current User
+GET http://localhost:3000/me
+
+### Logout
+DELETE http://localhost:3000/logout
