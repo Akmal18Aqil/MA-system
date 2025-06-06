@@ -10,13 +10,14 @@ import MahasantriRoute from "./routes/Mahasantri.mjs";
 import db from "./config/Database.mjs";
 import SequelizeStore from "connect-session-sequelize";
 import { notFound, errorHandler } from "./middleware/ErrorMiddleware.mjs";
+import cookieParser from "cookie-parser";
 
 const app = express();
-const sessionStore = SequelizeStore(session.Store);
+// const sessionStore = SequelizeStore(session.Store);
 
-const store = new sessionStore({
-  db: db,
-});
+// const store = new sessionStore({
+//   db: db,
+// });
 // sessionStore.sync();
 // (async()=>{
 //     await db.sync();
@@ -24,6 +25,7 @@ const store = new sessionStore({
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 app.use(
   cors({
     origin: "http://localhost:3000",
@@ -33,15 +35,14 @@ app.use(
     exposedHeaders: ["Content-Length", "X-JSON"],
   })
 );
-app.use(
-  session({
-    secret: process.env.SESSION_SECRET_KEY, // Replace with your own secret key
-    resave: false,
-    store: store,
-    saveUninitialized: true,
-    cookie: { secure: "auto" }, // Set to true if using HTTPS
-  })
-);
+// app.use(
+//   session({
+//     secret: process.env.SESSION_SECRET_KEY, // Replace with your own secret key
+//     resave: false,
+//     saveUninitialized: true,
+//     cookie: { secure: "auto" }, // Set to true if using HTTPS
+//   })
+// );
 
 app.use(UsersRoute);
 app.use(ProductsRoute);

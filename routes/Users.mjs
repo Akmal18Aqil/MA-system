@@ -7,7 +7,7 @@ import {
   deleteUser,
   changePassword,
 } from "../controllers/Users.mjs";
-import { verifyUser, adminOnly } from "../middleware/AuthUser.mjs";
+import { verifyToken, adminOnly } from "../middleware/JwtMiddleware.mjs";
 import { validateRequest } from "../middleware/ValidationMiddleware.mjs";
 import {
   createUserSchema,
@@ -21,7 +21,7 @@ const router = express.Router();
 
 router.get(
   "/users",
-  verifyUser,
+  verifyToken,
   adminOnly,
   validateRequest({ query: paginationSchema }),
   getUsers
@@ -29,7 +29,7 @@ router.get(
 
 router.get(
   "/users/:id",
-  verifyUser,
+  verifyToken,
   adminOnly,
   validateRequest({ params: idParamSchema }),
   getUserById
@@ -37,7 +37,7 @@ router.get(
 
 router.post(
   "/users",
-  verifyUser,
+  verifyToken,
   adminOnly,
   validateRequest({ body: createUserSchema }),
   createUser
@@ -45,7 +45,7 @@ router.post(
 
 router.patch(
   "/users/:id",
-  verifyUser,
+  verifyToken,
   adminOnly,
   validateRequest({
     body: updateUserSchema,
@@ -56,7 +56,7 @@ router.patch(
 
 router.delete(
   "/users/:id",
-  verifyUser,
+  verifyToken,
   adminOnly,
   validateRequest({ params: idParamSchema }),
   deleteUser
@@ -64,7 +64,7 @@ router.delete(
 
 router.patch(
   "/change-password",
-  verifyUser,
+  verifyToken,
   validateRequest({ body: changePasswordSchema }),
   changePassword
 );

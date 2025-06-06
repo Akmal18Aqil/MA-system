@@ -1,0 +1,126 @@
+### Base URL
+@baseUrl = http://localhost:3001
+
+### Variables (Optional, but useful)
+@adminEmail = admin1@example.com 
+@adminPassword = adminpass # Ganti dengan password admin yang valid
+@nonAdminEmail = indra1@example.com # Ganti dengan email user non-admin yang valid
+@nonAdminPassword = passwordBaru123 # Ganti dengan password user non-admin yang valid
+@testUserId = # Isi dengan UUID user yang ingin Anda uji (misalnya dari respons GET /users)
+@newUserName = Test User # Nama untuk user baru
+@newUserEmail = testuser{{$randomInt 1000 9999}}@example.com # Email unik untuk user baru
+@newUserPassword = newpassword123 # Password untuk user baru
+
+### 1. Login as Admin
+# Mendapatkan access token dan refresh token (dalam cookie) untuk user admin
+# @name adminLogin
+POST {{baseUrl}}/login
+Content-Type: application/json
+
+{
+  "email": "admin1@example.com",
+  "password": "adminpass"
+}
+
+### 2. Login as Non-Admin User
+# Mendapatkan access token dan refresh token (dalam cookie) untuk user non-admin
+# @name nonAdminLogin
+POST {{baseUrl}}/login
+Content-Type: application/json
+
+{
+  "email": "{{nonAdminEmail}}",
+  "password": "{{nonAdminPassword}}"
+}
+
+### 3. Get All Users (Requires Admin Token)
+# Mengakses daftar user dengan token admin yang valid
+# Menggunakan variabel dari respons login admin sebelumnya
+GET {{baseUrl}}/users?page=1&limit=10
+Authorization: Bearer {{adminLogin.response.body.accessToken}}
+Content-Type: application/json
+
+### 4. Get All Users (Without Token - Should Fail 401)
+# Mengakses daftar user tanpa token
+GET {{baseUrl}}/users
+Content-Type: application/json
+
+### 5. Get All Users (With Non-Admin Token - Should Fail 403)
+# Mengakses daftar user dengan token user non-admin
+GET {{baseUrl}}/users
+Authorization: Bearer {{nonAdminLogin.response.body.accessToken}}
+Content-Type: application/json
+
+### 6. Get User By ID (Requires Admin Token)
+# Mengakses detail user tertentu dengan token admin
+# Ganti @testUserId dengan UUID user yang valid
+GET {{baseUrl}}/users/{{testUserId}}
+Authorization: Bearer {{adminLogin.response.body.accessToken}}
+Content-Type: application/json
+
+### 7. Create New User (Requires Admin Token & Body Validation)
+# Membuat user baru dengan token admin
+# @name createUser
+POST {{baseUrl}}/users
+Authorization: Bearer {{adminLogin.response.body.accessToken}}
+Content-Type: application/json
+
+{
+  "name": "{{newUserName}}",
+  "email": "{{newUserEmail}}",
+  "password": "{{newUserPassword}}",
+  "confPassword": "{{newUserPassword}}",
+  "role": "mahasantri",
+  "nim": "1234567890"
+}
+
+### 8. Update User (Requires Admin Token & Body/Param Validation)
+# Mengupdate user yang baru dibuat dengan token admin
+# Menggunakan variabel dari respons create user sebelumnya
+PATCH {{baseUrl}}/users/{{createUser.response.body.data.uuid}}
+Authorization: Bearer {{adminLogin.response.body.accessToken}}
+Content-Type: application/json
+
+{
+  "name": "Updated {{newUserName}}",
+  "role": "user"
+}
+
+### 9. Change Password (Requires User's Own Token & Body Validation)
+# Mengganti password user yang baru dibuat menggunakan token user tersebut
+# Pertama, login sebagai user baru untuk mendapatkan tokennya
+# @name newUserLogin
+POST {{baseUrl}}/login
+Content-Type: application/json
+
+{
+  "email": "{{newUserEmail}}",
+  "password": "{{newUserPassword}}"
+}
+
+### Change Password Request
+PATCH {{baseUrl}}/change-password
+Authorization: Bearer {{newUserLogin.response.body.accessToken}}
+Content-Type: application/json
+
+{
+  "password": "newStrongPassword123",
+  "confPassword": "newStrongPassword123"
+}
+
+### 10. Delete User (Requires Admin Token & Param Validation)
+# Menghapus user yang baru dibuat dengan token admin
+# Menggunakan variabel dari respons create user sebelumnya
+DELETE {{baseUrl}}/users/{{createUser.response.body.data.uuid}}
+Authorization: Bearer {{adminLogin.response.body.accessToken}}
+Content-Type: application/json
+
+### 11. Refresh Access Token
+# Mendapatkan access token baru menggunakan refresh token (yang ada di cookie dari login terakhir)
+# Jalankan request login (1 atau 2) terlebih dahulu, lalu jalankan request ini
+GET {{baseUrl}}/token
+
+### 12. Logout
+# Menghapus refresh token dari database dan cookie
+# Jalankan request login (1 atau 2) terlebih dahulu, lalu jalankan request ini
+DELETE {{baseUrl}}/logout

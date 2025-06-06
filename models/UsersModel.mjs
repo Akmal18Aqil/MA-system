@@ -2,17 +2,15 @@ import { Sequelize, UUID, UUIDV1, UUIDV4 } from "sequelize";
 import db from "../config/Database.mjs";
 
 const { DataTypes } = Sequelize;
-const Users = db.define(
-  "users",
-  {
+const Users = db.define('users', {
     uuid: {
-      type: DataTypes.STRING,
-      defaultValue: UUIDV4,
-      allowNull: false,
-      validate: {
-        notEmpty: true,
-        len : [3, 100],
-      },
+        type: DataTypes.STRING,
+        defaultValue: UUIDV4,
+        allowNull: false,
+        validate: {
+            notEmpty: true,
+            len : [3, 100],
+        },
     },
     name:{
         type: DataTypes.STRING,
@@ -31,17 +29,17 @@ const Users = db.define(
         }
     },
     nim: {
-      type: DataTypes.STRING,
-      allowNull: true,
-      unique: true,
-      validate: {
-        isNumeric: true,
-        len: [5, 20]
-      }
+        type: DataTypes.STRING,
+        allowNull: true,
+        unique: true,
+        validate: {
+            isNumeric: true,
+            len: [5, 20]
+        }
     },
     isFirstLogin: {
-      type: DataTypes.BOOLEAN,
-      defaultValue: true,
+        type: DataTypes.BOOLEAN,
+        defaultValue: true,
     },
     password:{
         type: DataTypes.STRING,
@@ -57,10 +55,8 @@ const Users = db.define(
             notEmpty: true
         }
     }
-  },
-  {
-    freezeTableName: true,
-  }
-);
+}, {
+    freezeTableName: true
+});
 
 export default Users;
