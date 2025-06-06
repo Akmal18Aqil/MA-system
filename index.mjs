@@ -15,7 +15,7 @@ const app = express();
 const sessionStore = SequelizeStore(session.Store);
 
 const store = new sessionStore({
-    db: db
+  db: db,
 });
 // sessionStore.sync();
 // (async()=>{
@@ -24,7 +24,15 @@ const store = new sessionStore({
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(cors({ origin: process.env.APP_HOST, credentials: true }));
+app.use(
+  cors({
+    origin: "http://localhost:3000",
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "Accept"],
+    exposedHeaders: ["Content-Length", "X-JSON"],
+  })
+);
 app.use(
   session({
     secret: process.env.SESSION_SECRET_KEY, // Replace with your own secret key
@@ -53,6 +61,5 @@ app.use(errorHandler);
 //     }
 // })();
 app.listen(process.env.APP_PORT, () => {
-  console.log("Server is running");
+  console.log(`Server is running on ${process.env.APP_HOST}`);
 });
-

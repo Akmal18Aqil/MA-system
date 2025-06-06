@@ -7,7 +7,7 @@ const db = new Sequelize(
   process.env.DB_USER,
   process.env.DB_PASSWORD,
   {
-    host: 'localhost',
+    host: process.env.DB_HOST,
     dialect: "mysql",
     logging: true, // Set to false to disable logging
   })
