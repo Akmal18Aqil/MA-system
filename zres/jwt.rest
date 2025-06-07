@@ -1,30 +1,71 @@
-### Base URL
+############################################
+##  File: test-requests.http (REST Client) ##
+############################################
+
+# Base URL
 @baseUrl = http://localhost:3001
 
-### Variables (Optional, but useful)
-@adminEmail = admin1@example.com 
-@adminPassword = adminpass # Ganti dengan password admin yang valid
-@nonAdminEmail = indra1@example.com # Ganti dengan email user non-admin yang valid
-@nonAdminPassword = passwordBaru123 # Ganti dengan password user non-admin yang valid
-@testUserId = # Isi dengan UUID user yang ingin Anda uji (misalnya dari respons GET /users)
-@newUserName = Test User # Nama untuk user baru
-@newUserEmail = testuser{{$randomInt 1000 9999}}@example.com # Email unik untuk user baru
-@newUserPassword = newpassword123 # Password untuk user baru
+# Admin Credentials (pastikan sesuai dengan yang valid di database)
+@adminEmail = admin1@example.com
+@adminPassword = adminpass
 
-### 1. Login as Admin
-# Mendapatkan access token dan refresh token (dalam cookie) untuk user admin
-# @name adminLogin
+# Non-Admin User Credentials (pastikan sesuai dengan yang valid di database)
+@nonAdminEmail = indra1@example.com
+@nonAdminPassword = passwordBaru123
+
+# Variabel untuk membuat user baru
+@newUserName = Test User
+@newUserEmail = testuser{{$randomInt 1000 9999}}@example.com
+@newUserPassword = newpassword123
+
+# Placeholder untuk UUID: 
+# - Untuk pengujian GET/UPDATE/DELETE user tertentu, ganti sesuai hasil response GET /users 
+# - Contoh: @testUserId = 123e4567-e89b-12d3-a456-426614174000
+@testUserId = 
+
+###################################################
+## 1. Login as Admin (berhasil dan gagal)        ##
+###################################################
+
+### 1.1 Login Admin (Success) 
+# Mengembalikan access token dan refresh token (cookie)
+# @name adminLoginSuccess
 POST {{baseUrl}}/login
 Content-Type: application/json
 
 {
-  "email": "admin1@example.com",
-  "password": "adminpass"
+  "email": "{{adminEmail}}",
+  "password": "{{adminPassword}}"
 }
 
-### 2. Login as Non-Admin User
-# Mendapatkan access token dan refresh token (dalam cookie) untuk user non-admin
-# @name nonAdminLogin
+### 1.2 Login Admin (Invalid Password - 401)
+# Harus gagal dengan status 401 Unauthorized
+# @name adminLoginInvalidPassword
+POST {{baseUrl}}/login
+Content-Type: application/json
+
+{
+  "email": "{{adminEmail}}",
+  "password": "wrongpassword"
+}
+
+### 1.3 Login Admin (Non-existent Email - 401)
+# Harus gagal dengan status 401 Unauthorized
+# @name adminLoginInvalidEmail
+POST {{baseUrl}}/login
+Content-Type: application/json
+
+{
+  "email": "nonadmin@example.com",
+  "password": "{{adminPassword}}"
+}
+
+###################################################
+## 2. Login as Non-Admin User (berhasil dan gagal) ##
+###################################################
+
+### 2.1 Login Non-Admin (Success)
+# @name nonAdminLoginSuccess
 POST {{baseUrl}}/login
 Content-Type: application/json
 
@@ -33,36 +74,87 @@ Content-Type: application/json
   "password": "{{nonAdminPassword}}"
 }
 
-### 3. Get All Users (Requires Admin Token)
-# Mengakses daftar user dengan token admin yang valid
-# Menggunakan variabel dari respons login admin sebelumnya
-GET {{baseUrl}}/users?page=1&limit=10
-Authorization: Bearer {{adminLogin.response.body.accessToken}}
+### 2.2 Login Non-Admin (Invalid Password - 401)
+# @name nonAdminLoginInvalidPassword
+POST {{baseUrl}}/login
 Content-Type: application/json
 
-### 4. Get All Users (Without Token - Should Fail 401)
-# Mengakses daftar user tanpa token
+{
+  "email": "{{nonAdminEmail}}",
+  "password": "wrongpassword"
+}
+
+### 2.3 Login Non-Admin (Non-existent Email - 401)
+# @name nonAdminLoginInvalidEmail
+POST {{baseUrl}}/login
+Content-Type: application/json
+
+{
+  "email": "nouser@example.com",
+  "password": "{{nonAdminPassword}}"
+}
+
+###################################################
+## 3. Get All Users                              ##
+###################################################
+
+### 3.1 Get All Users (Admin Token - Success)
+# Menggunakan token dari adminLoginSuccess.response.body.accessToken
+# @name getAllUsersAsAdmin
+GET {{baseUrl}}/users
+Authorization: Bearer {{adminLoginSuccess.response.body.accessToken}}
+Content-Type: application/json
+
+### 3.2 Get All Users (Tanpa Token - Fail 401)
+# @name getAllUsersNoToken
 GET {{baseUrl}}/users
 Content-Type: application/json
 
-### 5. Get All Users (With Non-Admin Token - Should Fail 403)
-# Mengakses daftar user dengan token user non-admin
+### 3.3 Get All Users (Non-Admin Token - Fail 403)
+# Menggunakan token dari nonAdminLoginSuccess.response.body.accessToken
+# @name getAllUsersAsNonAdmin
 GET {{baseUrl}}/users
-Authorization: Bearer {{nonAdminLogin.response.body.accessToken}}
+Authorization: Bearer {{nonAdminLoginSuccess.response.body.accessToken}}
 Content-Type: application/json
 
-### 6. Get User By ID (Requires Admin Token)
-# Mengakses detail user tertentu dengan token admin
-# Ganti @testUserId dengan UUID user yang valid
+###################################################
+## 4. Get Single User by ID                      ##
+###################################################
+
+### 4.1 Get User by ID (Admin Token - Success)
+# Ganti @testUserId dengan UUID yang valid (dapat muncul dari getAllUsersAsAdmin)
+# @name getUserByIdSuccess
 GET {{baseUrl}}/users/{{testUserId}}
-Authorization: Bearer {{adminLogin.response.body.accessToken}}
+Authorization: Bearer {{adminLoginSuccess.response.body.accessToken}}
 Content-Type: application/json
 
-### 7. Create New User (Requires Admin Token & Body Validation)
-# Membuat user baru dengan token admin
-# @name createUser
+### 4.2 Get User by ID (Admin Token - Not Found 404)
+# Misal menggunakan UUID random yang tidak ada
+# @name getUserByIdNotFound
+GET {{baseUrl}}/users/00000000-0000-0000-0000-000000000000
+Authorization: Bearer {{adminLoginSuccess.response.body.accessToken}}
+Content-Type: application/json
+
+### 4.3 Get User by ID (Non-Admin Token - Fail 403)
+# @name getUserByIdAsNonAdmin
+GET {{baseUrl}}/users/{{testUserId}}
+Authorization: Bearer {{nonAdminLoginSuccess.response.body.accessToken}}
+Content-Type: application/json
+
+### 4.4 Get User by ID (Tanpa Token - Fail 401)
+# @name getUserByIdNoToken
+GET {{baseUrl}}/users/{{testUserId}}
+Content-Type: application/json
+
+###################################################
+## 5. Create New User                            ##
+###################################################
+
+### 5.1 Create User (Admin Token - Success)
+# Membuat user baru dengan data minimal yang valid
+# @name createUserSuccess
 POST {{baseUrl}}/users
-Authorization: Bearer {{adminLogin.response.body.accessToken}}
+Authorization: Bearer {{adminLoginSuccess.response.body.accessToken}}
 Content-Type: application/json
 
 {
@@ -70,26 +162,137 @@ Content-Type: application/json
   "email": "{{newUserEmail}}",
   "password": "{{newUserPassword}}",
   "confPassword": "{{newUserPassword}}",
-  "role": "mahasantri",
+  "role": "user",
   "nim": "1234567890"
 }
 
-### 8. Update User (Requires Admin Token & Body/Param Validation)
-# Mengupdate user yang baru dibuat dengan token admin
-# Menggunakan variabel dari respons create user sebelumnya
-PATCH {{baseUrl}}/users/{{createUser.response.body.data.uuid}}
-Authorization: Bearer {{adminLogin.response.body.accessToken}}
+### 5.2 Create User (Admin Token - Email Already Exists 400)
+# Menggunakan email yang sama dengan variabel @newUserEmail di atas
+# @name createUserEmailExists
+POST {{baseUrl}}/users
+Authorization: Bearer {{adminLoginSuccess.response.body.accessToken}}
+Content-Type: application/json
+
+{
+  "name": "Another User",
+  "email": "testuser2677@example.com",
+  "password": "somepassword",
+  "confPassword": "somepassword",
+  "role": "user",
+  "nim": "0987654321"
+}
+
+### 5.3 Create User (Admin Token - Body Validation Error 400)
+# Contoh missing field `confPassword`
+# @name createUserValidationError
+POST {{baseUrl}}/users
+Authorization: Bearer {{adminLoginSuccess.response.body.accessToken}}
+Content-Type: application/json
+
+{
+  "name": "BadUser",
+  "email": "baduser@example.com",
+  "password": "short",
+  "role": "user"
+}
+
+### 5.4 Create User (Non-Admin Token - Fail 403)
+# Harus gagal karena role user bukan admin
+# @name createUserAsNonAdmin
+POST {{baseUrl}}/users
+Authorization: Bearer {{nonAdminLoginSuccess.response.body.accessToken}}
+Content-Type: application/json
+
+{
+  "name": "ShouldNotCreate",
+  "email": "user@example.com",
+  "password": "password123",
+  "confPassword": "password123",
+  "role": "user",
+  "nim": "1111111111"
+}
+
+### 5.5 Create User (Tanpa Token - Fail 401)
+# @name createUserNoToken
+POST {{baseUrl}}/users
+Content-Type: application/json
+
+{
+  "name": "NoAuth",
+  "email": "noauth@example.com",
+  "password": "password123",
+  "confPassword": "password123",
+  "role": "user",
+  "nim": "2222222222"
+}
+
+###################################################
+## 6. Update Existing User                       ##
+###################################################
+
+### 6.1 Update User (Admin Token - Success)
+# Ganti {{createUserSuccess.response.body.data.uuid}} dengan UUID user baru dari respons createUserSuccess
+# @name updateUserSuccess
+PATCH {{baseUrl}}/users/{{createUserSuccess.response.body.data.uuid}}
+Authorization: Bearer {{adminLoginSuccess.response.body.accessToken}}
 Content-Type: application/json
 
 {
   "name": "Updated {{newUserName}}",
+  "role": "mahasantri"
+}
+
+### 6.2 Update User (Admin Token - Not Found 404)
+# Menggunakan UUID yang tidak ada
+# @name updateUserNotFound
+PATCH {{baseUrl}}/users/00000000-0000-0000-0000-000000000000
+Authorization: Bearer {{adminLoginSuccess.response.body.accessToken}}
+Content-Type: application/json
+
+{
+  "name": "NoOne",
   "role": "user"
 }
 
-### 9. Change Password (Requires User's Own Token & Body Validation)
-# Mengganti password user yang baru dibuat menggunakan token user tersebut
-# Pertama, login sebagai user baru untuk mendapatkan tokennya
-# @name newUserLogin
+### 6.3 Update User (Admin Token - Body Validation Error 400)
+# Misal memberikan role yang tidak dikenali
+# @name updateUserValidationError
+PATCH {{baseUrl}}/users/{{createUserSuccess.response.body.data.uuid}}
+Authorization: Bearer {{adminLoginSuccess.response.body.accessToken}}
+Content-Type: application/json
+
+{
+  "role": "invalidRole"
+}
+
+### 6.4 Update User (Non-Admin Token - Fail 403)
+# @name updateUserAsNonAdmin
+PATCH {{baseUrl}}/users/{{createUserSuccess.response.body.data.uuid}}
+Authorization: Bearer {{nonAdminLoginSuccess.response.body.accessToken}}
+Content-Type: application/json
+
+{
+  "name": "ShouldNotUpdate",
+  "role": "user"
+}
+
+### 6.5 Update User (Tanpa Token - Fail 401)
+# @name updateUserNoToken
+PATCH {{baseUrl}}/users/{{createUserSuccess.response.body.data.uuid}}
+Content-Type: application/json
+
+{
+  "name": "NoAuthUpdate",
+  "role": "user"
+}
+
+###################################################
+## 7. Change Password (oleh User Sendiri)         ##
+###################################################
+
+### 7.1 Login sebagai User Baru (Success)
+# Harus dijalankan setelah createUserSuccess untuk memperoleh token user baru
+# @name newUserLoginSuccess
 POST {{baseUrl}}/login
 Content-Type: application/json
 
@@ -98,9 +301,11 @@ Content-Type: application/json
   "password": "{{newUserPassword}}"
 }
 
-### Change Password Request
+### 7.2 Change Password (User Baru - Success)
+# Setelah newUserLoginSuccess, gunakan tokennya
+# @name changePasswordSuccess
 PATCH {{baseUrl}}/change-password
-Authorization: Bearer {{newUserLogin.response.body.accessToken}}
+Authorization: Bearer {{newUserLoginSuccess.response.body.accessToken}}
 Content-Type: application/json
 
 {
@@ -108,19 +313,122 @@ Content-Type: application/json
   "confPassword": "newStrongPassword123"
 }
 
-### 10. Delete User (Requires Admin Token & Param Validation)
-# Menghapus user yang baru dibuat dengan token admin
-# Menggunakan variabel dari respons create user sebelumnya
-DELETE {{baseUrl}}/users/{{createUser.response.body.data.uuid}}
-Authorization: Bearer {{adminLogin.response.body.accessToken}}
+### 7.3 Change Password (Password Mismatch - 400)
+# @name changePasswordMismatch
+PATCH {{baseUrl}}/change-password
+Authorization: Bearer {{newUserLoginSuccess.response.body.accessToken}}
 Content-Type: application/json
 
-### 11. Refresh Access Token
-# Mendapatkan access token baru menggunakan refresh token (yang ada di cookie dari login terakhir)
-# Jalankan request login (1 atau 2) terlebih dahulu, lalu jalankan request ini
-GET {{baseUrl}}/token
+{
+  "password": "abc123",
+  "confPassword": "xyz789"
+}
 
-### 12. Logout
-# Menghapus refresh token dari database dan cookie
-# Jalankan request login (1 atau 2) terlebih dahulu, lalu jalankan request ini
+### 7.4 Change Password (Tanpa Token - 401)
+# @name changePasswordNoToken
+PATCH {{baseUrl}}/change-password
+Content-Type: application/json
+
+{
+  "password": "anything",
+  "confPassword": "anything"
+}
+
+###################################################
+## 8. Delete User                                ##
+###################################################
+
+### 8.1 Delete User (Admin Token - Success)
+# Menghapus user yang dibuat sebelumnya
+# @name deleteUserSuccess
+DELETE {{baseUrl}}/users/71e5e3bc-8d25-464c-97a5-7b6dea6af809
+Authorization: Bearer {{adminLoginSuccess.response.body.accessToken}}
+Content-Type: application/json
+
+### 8.2 Delete User (Admin Token - Not Found 404)
+# Menghapus UUID random yang tidak ada
+# @name deleteUserNotFound
+DELETE {{baseUrl}}/users/00000000-0000-0000-0000-000000000000
+Authorization: Bearer {{adminLoginSuccess.response.body.accessToken}}
+Content-Type: application/json
+
+### 8.3 Delete User (Non-Admin Token - Fail 403)
+# Harus gagal apabila pengguna bukan admin
+# @name deleteUserAsNonAdmin
+DELETE {{baseUrl}}/users/{{createUserSuccess.response.body.data.uuid}}
+Authorization: Bearer {{nonAdminLoginSuccess.response.body.accessToken}}
+Content-Type: application/json
+
+### 8.4 Delete User (Tanpa Token - 401)
+# @name deleteUserNoToken
+DELETE {{baseUrl}}/users/{{createUserSuccess.response.body.data.uuid}}
+Content-Type: application/json
+
+###################################################
+## 9. Refresh Access Token                        ##
+###################################################
+
+### 9.1 Refresh Token (Berhasil)
+# Setelah menjalankan login (adminLoginSuccess atau nonAdminLoginSuccess), jalankan request ini
+# @name refreshTokenSuccess
+GET {{baseUrl}}/token
+# REST Client akan mengirimkan cookie refresh token secara otomatis
+Content-Type: application/json
+
+### 9.2 Refresh Token (Tanpa Cookie - Fail 401)
+# Jika tidak ada cookie refresh token, seharusnya 401 Unauthorized
+# @name refreshTokenNoCookie
+GET {{baseUrl}}/token
+Content-Type: application/json
+
+###################################################
+## 10. Logout                                    ##
+###################################################
+
+### 10.1 Logout (Berhasil)
+# Setelah login (adminLoginSuccess atau nonAdminLoginSuccess), jalankan request ini
+# @name logoutSuccess
 DELETE {{baseUrl}}/logout
+# REST Client akan mengirimkan cookie refresh token secara otomatis
+Content-Type: application/json
+
+### 10.2 Logout (Tanpa Cookie - Fail 401)
+# Seharusnya 401 jika tidak ada refresh token (cookie)
+# @name logoutNoCookie
+DELETE {{baseUrl}}/logout
+Content-Type: application/json
+
+###############################################
+## 11. (Optional) User Registration          ##
+## Jika API Anda menyediakan endpoint register##
+###############################################
+
+# Jika ada endpoint untuk register, tambahkan di sini
+# @name registerNewUser
+POST {{baseUrl}}/register
+Content-Type: application/json
+
+{
+  "name": "RegisterUser",
+  "email": "register{{$randomInt 1000 9999}}@example.com",
+  "password": "regpass123",
+  "confPassword": "regpass123",
+  "role": "user",
+  "nim": "5555555555"
+}
+
+### 11.1 Register (Validation Error - 400)
+# Misal password tidak cocok
+# @name registerValidationError
+POST {{baseUrl}}/register
+Content-Type: application/json
+
+{
+  "name": "BadRegister",
+  "email": "badreg@example.com",
+  "password": "pass1",
+  "confPassword": "pass2",
+  "role": "user",
+  "nim": "6666666666"
+}
+

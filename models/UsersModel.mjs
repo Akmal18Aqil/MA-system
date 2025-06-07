@@ -1,5 +1,7 @@
 import { Sequelize, UUID, UUIDV1, UUIDV4 } from "sequelize";
 import db from "../config/Database.mjs";
+import { validate } from "../middleware/ValidationMiddleware.mjs";
+// import { not } from "joi"; // <--- This line is removed
 
 const { DataTypes } = Sequelize;
 const Users = db.define('users', {
@@ -54,7 +56,14 @@ const Users = db.define('users', {
         validate:{
             notEmpty: true
         }
-    }
+    },
+    refreshToken: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+        validate: {
+            notEmpty: true,
+        }
+  }
 }, {
     freezeTableName: true
 });

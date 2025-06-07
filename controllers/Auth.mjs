@@ -17,12 +17,12 @@ export const Login = async (req, res, next) => {
     });
 
     if (!user) {
-      throw new NotFoundError('User');
+      throw new NotFoundError('User Tidak ada');
     }
 
     const match = await argon2.verify(user.password, req.body.password);
     if (!match) {
-      throw new ValidationError('Password salah');
+      throw new AuthenticationError('Email atau password salah');
     }
 
     // Generate Tokens
@@ -140,6 +140,7 @@ export const logOut = async (req, res, next) => {
 // New function to refresh access token (already provided in previous step)
 export const refreshToken = async (req, res, next) => {
   try {
+    console.log("COOKIE DITERIMA:", req.cookies);
     const refreshToken = req.cookies.refreshToken;
     if (!refreshToken) {
       throw new AuthenticationError('Refresh token tidak ditemukan');
@@ -168,6 +169,7 @@ export const refreshToken = async (req, res, next) => {
     });
 
   } catch (error) {
+    console.error("Gagal verifikasi refresh token:", error.message);
     // If refresh token verification fails (e.g., expired), clear the cookie
     res.clearCookie('refreshToken');
     next(new AuthenticationError('Refresh token tidak valid atau kadaluarsa'));

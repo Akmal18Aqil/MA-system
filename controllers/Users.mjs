@@ -190,7 +190,7 @@ export const changePassword = async (req, res, next) => {
 
     // Cari user dari session
     const user = await Users.findOne({
-      where: { id: req.userId }
+      where: { uuid: req.userId }
     });
 
     if (!user) {

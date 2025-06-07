@@ -39,6 +39,7 @@ app.use(
 //   session({
 //     secret: process.env.SESSION_SECRET_KEY, // Replace with your own secret key
 //     resave: false,
+//     store: store,
 //     saveUninitialized: true,
 //     cookie: { secure: "auto" }, // Set to true if using HTTPS
 //   })

@@ -3,7 +3,9 @@ import { AuthenticationError, AuthorizationError } from '../utils/error.mjs';
 
 export const verifyToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
+  console.log('Authorization Header:', authHeader);
   const token = authHeader && authHeader.split(' ')[1]; // Extract token from "Bearer TOKEN"
+  console.log('Extracted Token:', token);
 
   if (token == null) {
     return next(new AuthenticationError('Token tidak ditemukan')); // No token provided
